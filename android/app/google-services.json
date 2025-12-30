@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "147569055544",
+    "project_id": "foadmap",
+    "storage_bucket": "foadmap.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:147569055544:android:6a4a100ef31061650a53cd",
+        "android_client_info": {
+          "package_name": "com.kovaserv.foadmap"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "147569055544-c3t7f70eqlbs5600b43pf0o1dmra1gkc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kovaserv.foadmap",
+            "certificate_hash": "5e56ddf95b542dde1bb75fbfd37502f3e6c44b32"
+          }
+        },
+        {
+          "client_id": "147569055544-v4srug34sup3lp343ft2gj4dp6undkj2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDTT2aGE7jtwnx4fSwxXb0gI342vfQTLw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "147569055544-v4srug34sup3lp343ft2gj4dp6undkj2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
