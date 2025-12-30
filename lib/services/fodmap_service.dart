@@ -643,6 +643,46 @@ class FodmapService {
         .replaceAll(RegExp(r':'), ' ')      // Remplacer : par espace
         .trim();
     
+    // LISTE D'EXCLUSION : Termes qui indiquent un produit végétal/sans lactose/sans gluten
+    // Si détectés, on ne doit PAS matcher avec les produits laitiers/gluten classiques
+    List<String> exclusionTerms = [
+      'végétal',
+      'vegetal',
+      'végane',
+      'vegan',
+      'vegane',
+      'sans lactose',
+      'sans gluten',
+      'délactosé',
+      'delactose',
+      'lactose free',
+      'gluten free',
+      'riz',        // lait de riz, farine de riz
+      'amande',     // lait d'amande
+      'soja',       // lait de soja (mais attention, le soja lui-même est FODMAP)
+      'avoine',     // lait d'avoine
+      'coco',       // lait de coco
+      'noisette',   // lait de noisette (mais attention, noisettes sont FODMAP)
+      'châtaigne',  // lait de châtaigne
+      'quinoa',     // lait de quinoa
+    ];
+    
+    // Vérifier si l'ingrédient contient un terme d'exclusion
+    for (String exclusionTerm in exclusionTerms) {
+      if (normalizedIngredient.contains(exclusionTerm)) {
+        // Exception : si c'est "lait de soja", on doit quand même détecter le soja
+        if (exclusionTerm == 'soja' && normalizedIngredient.contains('lait de soja')) {
+          continue; // On ne retourne pas null, on laisse le soja être détecté plus bas
+        }
+        // Exception : si c'est "lait de noisette", on doit quand même détecter la noisette
+        if (exclusionTerm == 'noisette' && normalizedIngredient.contains('lait de noisette')) {
+          continue; // On ne retourne pas null
+        }
+        // Pour tous les autres cas végétaux/sans lactose, on ignore
+        return null;
+      }
+    }
+    
     // Mapping des variantes/synonymes vers les ingrédients de la base
     // Format: pattern à détecter -> ID du produit dans la base FODMAP
     Map<String, int> synonymMapping = {

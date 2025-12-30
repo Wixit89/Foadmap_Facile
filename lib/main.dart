@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'screens/scanner_screen.dart';
 import 'screens/products_screen.dart';
 import 'screens/history_screen.dart';
+import 'screens/alternatives_screen.dart';
 import 'screens/account_screen.dart';
 import 'providers/theme_provider.dart';
 
@@ -87,6 +88,7 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const ScannerScreen(),
     const ProductsScreen(),
+    const AlternativesScreen(),
     const HistoryScreen(),
     const AccountScreen(),
   ];
@@ -111,7 +113,12 @@ class _MainScreenState extends State<MainScreen> {
           NavigationDestination(
             icon: Icon(Icons.shopping_bag_outlined),
             selectedIcon: Icon(Icons.shopping_bag),
-            label: 'Foadmaps',
+            label: 'Fodmaps',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.lightbulb_outline),
+            selectedIcon: Icon(Icons.lightbulb),
+            label: 'Alternatifs',
           ),
           NavigationDestination(
             icon: Icon(Icons.history_outlined),

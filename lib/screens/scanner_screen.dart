@@ -649,7 +649,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
         ),
         const SizedBox(height: 12),
         
-        // Marque, Quantité et Nutri-Score sur la même ligne
+        // Marque et Quantité
         Row(
           children: [
             // Marque
@@ -672,9 +672,24 @@ class _ScannerScreenState extends State<ScannerScreen> {
                 color: Colors.grey[700],
               ),
             ),
+          ],
+        ),
+        
+        const SizedBox(height: 8),
+        
+        // Nutri-Score et Nombre d'ingrédients
+        Row(
+          children: [
             // Nutri-Score
             if (data['nutriscore_grade'] != null && data['nutriscore_grade'].isNotEmpty) ...[
-              const SizedBox(width: 8),
+              Text(
+                'Nutriscore: ',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
@@ -688,6 +703,20 @@ class _ScannerScreenState extends State<ScannerScreen> {
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
                   ),
+                ),
+              ),
+              const SizedBox(width: 16),
+            ],
+            // Nombre d'ingrédients
+            if (fodmapAnalysis != null && fodmapAnalysis!['analyzed']) ...[
+              Icon(Icons.list_alt, size: 16, color: Colors.grey[600]),
+              const SizedBox(width: 4),
+              Text(
+                '${(fodmapAnalysis!['ingredients'] as List).length} ingrédients',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],

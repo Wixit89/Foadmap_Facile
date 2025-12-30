@@ -1,0 +1,157 @@
+categorie,marque,description
+Laitiers,Matin Léger,Produits sans lactose
+Laitiers,Lactel,Lait et produits laitiers
+Laitiers,Lactalis,Groupe laitier français
+Laitiers,Président,Fromages et beurre
+Laitiers,Entremont,Fromages français
+Laitiers,Kiri,Fromage à tartiner
+Laitiers,La Vache qui rit,Fromage fondu
+Laitiers,Babybel,Fromage portions
+Laitiers,Boursin,Fromage à tartiner
+Laitiers,Saint-Môret,Fromage frais
+Laitiers,Elle & Vire,Beurre et crème
+Laitiers,Paysan Breton,Beurre et produits laitiers
+Laitiers,Danone,Yaourts et produits laitiers
+Laitiers,Activia,Yaourts Danone
+Laitiers,Actimel,Boissons lactées Danone
+Laitiers,Taillefine,Produits minceur Danone
+Laitiers,Yoplait,Yaourts
+Laitiers,Panier de Yoplait,Yaourts aux fruits
+Laitiers,Perle de Lait,Yaourts Yoplait
+Laitiers,La Laitière,Yaourts et desserts
+Laitiers,Mamie Nova,Desserts lactés
+Laitiers,Candia,Lait UHT
+Laitiers,Gervais,Fromage frais
+Laitiers,Rians,Fromages frais
+Laitiers,Chambourcy,Yaourts et desserts
+Laitiers,Petit Filou,Fromages frais pour enfants
+Laitiers,Jockey,Yaourts
+Bio/Sans Gluten,Gerblé,Produits sans gluten
+Bio/Sans Gluten,Bjorg,Produits bio
+Bio/Sans Gluten,Sojade,Desserts végétaux
+Bio/Sans Gluten,Priméal,Produits bio
+Bio/Sans Gluten,Celnat,Céréales et produits bio
+Bio/Sans Gluten,Jardin Bio,Produits bio
+Bio/Sans Gluten,Naturalia,Enseigne bio
+Bio/Sans Gluten,Bio Village,Marque bio
+Bio/Sans Gluten,Marque Repère Bio,MDD Leclerc bio
+Biscuits,Lu,Biscuits
+Biscuits,St Michel,Biscuits bretons
+Biscuits,Bonne Maman,Confitures et biscuits
+Biscuits,Brossard,Gâteaux et biscuits
+Biscuits,Savane,Gâteaux Brossard
+Biscuits,Pitch,Gâteaux Brossard
+Biscuits,Pasquier,Brioches et gâteaux
+Biscuits,Harry's,Pain de mie et viennoiseries
+Biscuits,Jacquet,Pain de mie
+Biscuits,Hénaff,Pâté et produits bretons
+Biscuits,Grillon d'Or,Barres céréales
+Biscuits,Traou Mad,Biscuits bretons
+Biscuits,Gavottes,Crêpes dentelle bretonnes
+Biscuits,Fossier,Biscuits champenois
+Pains,Banette,Pains
+Pains,La Boulangère,Pain de mie
+Pains,Campaillette,Pains
+Pains,Paul,Boulangerie-pâtisserie
+Pains,La Fournée Dorée,Boulangerie
+Compotes/Confitures,Andros,Compotes et confitures
+Compotes/Confitures,Materne,Compotes (Pom'Potes)
+Compotes/Confitures,Pom'Potes,Compotes en gourde
+Compotes/Confitures,St Dalfour,Confitures
+Compotes/Confitures,Charles & Alice,Compotes
+Compotes/Confitures,Vahiné,Préparations pâtisserie
+Compotes/Confitures,Confipote,Compotes
+Compotes/Confitures,Clément Faugier,Crème de marrons
+Pâtes/Riz,Panzani,Pâtes
+Pâtes/Riz,Lustucru,Pâtes et riz
+Pâtes/Riz,Tipiak,Semoules et féculents
+Pâtes/Riz,Taureau Ailé,Riz
+Pâtes/Riz,Ebly,Blé tendre
+Pâtes/Riz,Alpina Savoie,Produits de Savoie
+Pâtes/Riz,Markal,Produits bio
+Chocolat,Poulain,Chocolat
+Chocolat,Menier,Chocolat
+Chocolat,Weiss,Chocolat alsacien
+Chocolat,Révillon,Chocolat
+Chocolat,Cemoi,Chocolat et confiserie
+Chocolat,Monbana,Chocolats chauds
+Chocolat,Banania,Poudre chocolatée
+Chocolat,Ricore,Boisson chicorée-café
+Chocolat,Carambar,Bonbons
+Chocolat,Lutti,Confiserie
+Chocolat,Krema,Chocolat
+Chocolat,Jacques,Chocolat belge (mais très présent en France)
+Sauces,Amora,Moutarde et sauces
+Sauces,Maille,Moutarde et condiments
+Sauces,Benedicta,Mayonnaise et sauces
+Sauces,Lesieur,Huiles
+Sauces,Puget,Huiles d'olive
+Sauces,Isio 4,Huiles Lesieur
+Sauces,St Hubert,Margarines
+Sauces,Fruit d'Or,Margarines
+Sauces,Primevère,Margarines
+Sauces,Planta Fin,Matières grasses
+Sauces,Bonduelle,Légumes en conserve
+Sauces,Cassegrain,Légumes en conserve
+Sauces,D'Aucy,Légumes en conserve
+Plats cuisinés,Fleury Michon,Charcuterie et plats préparés
+Plats cuisinés,Herta,Charcuterie
+Plats cuisinés,Justin Bridou,Saucisson
+Plats cuisinés,William Saurin,Plats cuisinés
+Plats cuisinés,Marie,Plats surgelés
+Plats cuisinés,Père Dodu,Volailles
+Plats cuisinés,Cochonou,Saucisson
+Plats cuisinés,Aoste,Charcuterie
+Distributeurs,Carrefour,MDD Carrefour
+Distributeurs,Carrefour Bio,Bio Carrefour
+Distributeurs,Carrefour Extra,Premium Carrefour
+Distributeurs,Auchan,MDD Auchan
+Distributeurs,Auchan Bio,Bio Auchan
+Distributeurs,Monoprix,MDD Monoprix
+Distributeurs,Monoprix Bio,Bio Monoprix
+Distributeurs,Monoprix Gourmet,Premium Monoprix
+Distributeurs,Leclerc,MDD Leclerc
+Distributeurs,Marque Repère,MDD Leclerc
+Distributeurs,Eco+,Entrée de gamme Leclerc
+Distributeurs,Intermarché,MDD Intermarché
+Distributeurs,Pâturages,Laitiers Intermarché
+Distributeurs,Casino,MDD Casino
+Distributeurs,Casino Bio,Bio Casino
+Distributeurs,Système U,MDD Système U
+Distributeurs,U,MDD Système U
+Distributeurs,U Bio,Bio Système U
+Distributeurs,U Saveurs,Premium Système U
+Distributeurs,Lidl,Enseigne discount
+Distributeurs,Milbona,Laitiers Lidl
+Distributeurs,Bio Organic,Bio Lidl
+Distributeurs,Aldi,Enseigne discount
+Distributeurs,Biocoop,Réseau bio
+Distributeurs,Picard,Surgelés
+Distributeurs,Franprix,Supermarché urbain
+Distributeurs,Simply Market,Supermarché
+Distributeurs,Grand Frais,Primeur et frais
+Boissons,Vittel,Eau minérale
+Boissons,Contrex,Eau minérale
+Boissons,Hépar,Eau minérale
+Boissons,Evian,Eau minérale
+Boissons,Badoit,Eau gazeuse
+Boissons,Volvic,Eau minérale
+Boissons,Cristalline,Eau de source
+Boissons,Thonon,Eau minérale
+Boissons,St Yorre,Eau gazeuse
+Boissons,Vichy Célestins,Eau gazeuse
+Boissons,Orangina,Soda aux agrumes
+Boissons,Oasis,Boissons aux fruits
+Boissons,Pago,Jus de fruits
+Boissons,Joker,Jus de fruits
+Boissons,Pampryl,Jus de fruits
+Boissons,Granini,Jus de fruits
+Boissons,Éléphant,Infusions
+Boissons,Kusmi Tea,Thés
+Boissons,Mariage Frères,Thés
+Bébé,Blédina,Alimentation infantile
+Bébé,Picot,Lait infantile
+Bébé,Gallia,Lait infantile
+Bébé,Guigoz,Lait infantile
+
+

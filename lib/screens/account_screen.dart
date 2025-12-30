@@ -190,14 +190,6 @@ class _AccountScreenState extends State<AccountScreen> {
           // Préférences
           _buildSection('Préférences'),
           _buildMenuItem(
-            icon: Icons.notifications_outlined,
-            title: 'Notifications',
-            subtitle: 'Gérer les alertes',
-            onTap: () {
-              _showNotificationsDialog();
-            },
-          ),
-          _buildMenuItem(
             icon: Icons.language,
             title: 'Langue',
             subtitle: 'Français',
@@ -367,38 +359,6 @@ class _AccountScreenState extends State<AccountScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => ProfileScreen(user: user),
-      ),
-    );
-  }
-
-  void _showNotificationsDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Notifications'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SwitchListTile(
-              title: Text('Nouveaux produits FODMAP'),
-              subtitle: Text('Alertes sur la base de données'),
-              value: true,
-              onChanged: null,
-            ),
-            SwitchListTile(
-              title: Text('Rappels quotidiens'),
-              subtitle: Text('Suivez votre alimentation'),
-              value: false,
-              onChanged: null,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Fermer'),
-          ),
-        ],
       ),
     );
   }
