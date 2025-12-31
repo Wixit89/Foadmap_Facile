@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../providers/theme_provider.dart';
-import '../models/symptom_log.dart';
 import 'profile_screen.dart';
 import 'digestive_profile_screen.dart';
 
@@ -23,10 +22,11 @@ class _AccountScreenState extends State<AccountScreen> {
   User? _currentUser;
   bool _statsLoading = true;
   int _totalScans = 0;
-  int _symptoms7d = 0;
   int _scans7d = 0;
   String _topFodmap = '-';
   int _topFodmapCount = 0;
+  String _topSymptom = '-';
+  int _topSymptomCount = 0;
 
   @override
   void initState() {
@@ -116,13 +116,38 @@ class _AccountScreenState extends State<AccountScreen> {
       final symptoms = await _dbService.getAllSymptomLogs();
       final now = DateTime.now();
       final sevenDaysAgo = now.subtract(const Duration(days: 7));
-      int symptomsCount = symptoms.where((SymptomLog log) {
+      
+      // Compter chaque type de symptôme sur les 7 derniers jours
+      final Map<String, int> symptomCounts = {
+        'Ballonnements': 0,
+        'Douleurs': 0,
+        'Gaz': 0,
+        'Diarrhée': 0,
+        'Irritabilité': 0,
+      };
+      
+      for (final log in symptoms) {
         final d = DateTime(log.date.year, log.date.month, log.date.day);
         final inRange = d.isAfter(sevenDaysAgo) || d.isAtSameMomentAs(sevenDaysAgo);
-        // Exclure les jours marqués "aucun symptôme" uniquement
-        final hasRealSymptoms = log.hasAny && !log.hasNoSymptoms;
-        return inRange && hasRealSymptoms;
-      }).length;
+        if (!inRange || log.hasNoSymptoms) continue;
+        
+        if (log.hasBloating) symptomCounts['Ballonnements'] = symptomCounts['Ballonnements']! + 1;
+        if (log.hasPain) symptomCounts['Douleurs'] = symptomCounts['Douleurs']! + 1;
+        if (log.hasGas) symptomCounts['Gaz'] = symptomCounts['Gaz']! + 1;
+        if (log.hasDiarrhea) symptomCounts['Diarrhée'] = symptomCounts['Diarrhée']! + 1;
+        if (log.hasIrritability) symptomCounts['Irritabilité'] = symptomCounts['Irritabilité']! + 1;
+      }
+      
+      // Trouver le symptôme le plus récurrent
+      String topSymptom = '-';
+      int topSymptomCnt = 0;
+      symptomCounts.forEach((name, count) {
+        if (count > topSymptomCnt) {
+          topSymptomCnt = count;
+          topSymptom = name;
+        }
+      });
+      
       int scansCount7d = scans.where((s) {
         final d = DateTime(s.scannedAt.year, s.scannedAt.month, s.scannedAt.day);
         return d.isAfter(sevenDaysAgo) || d.isAtSameMomentAs(sevenDaysAgo);
@@ -190,10 +215,11 @@ class _AccountScreenState extends State<AccountScreen> {
       if (!mounted) return;
       setState(() {
         _totalScans = total;
-        _symptoms7d = symptomsCount;
         _scans7d = scansCount7d;
         _topFodmap = topFodmap;
         _topFodmapCount = topCount;
+        _topSymptom = topSymptom;
+        _topSymptomCount = topSymptomCnt;
         _statsLoading = false;
       });
     } catch (e) {
@@ -375,12 +401,7 @@ class _AccountScreenState extends State<AccountScreen> {
                               ),
                               SizedBox(
                                 width: itemWidth,
-                                child: _buildStatCard(
-                                  icon: Icons.monitor_heart,
-                                  title: 'Symptômes sur 7 jours',
-                                  value: '$_symptoms7d',
-                                  color: Colors.red,
-                                ),
+                                child: _buildTopSymptomCard(),
                               ),
                               SizedBox(
                                 width: itemWidth,
@@ -953,6 +974,116 @@ class _AccountScreenState extends State<AccountScreen> {
                     if (hasData)
                       Text(
                         '$_topFodmapCount occurrence${_topFodmapCount > 1 ? 's' : ''}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopSymptomCard() {
+    final hasData = _topSymptom != '-' && _topSymptomCount > 0;
+    final cardColor = hasData ? Colors.red : Colors.grey;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Symptôme récurrent',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              GestureDetector(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: const Text('Symptôme récurrent'),
+                        content: const Text(
+                          'Ce symptôme est celui qui revient le plus souvent '
+                          'dans vos enregistrements des 7 derniers jours. '
+                          'Identifier vos symptômes récurrents peut aider à mieux cibler les aliments problématiques.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('OK'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+                child: Icon(
+                  Icons.help_outline,
+                  size: 16,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: cardColor.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.monitor_heart, color: cardColor),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      _topSymptom,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: cardColor,
+                      ),
+                    ),
+                    if (hasData)
+                      Text(
+                        '$_topSymptomCount fois en 7j',
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey[600],
