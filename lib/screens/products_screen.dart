@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'dart:io';
 import '../models/product.dart';
 import '../services/fodmap_service.dart';
 
@@ -16,6 +18,70 @@ class _ProductsScreenState extends State<ProductsScreen> {
   ).toSet().toList(); // Enlever les doublons
   String _searchQuery = '';
   String _selectedFilter = 'Tous'; // 'Tous', 'Déconseillé', 'Attention', 'OK'
+
+  // Bannières AdMob pour la liste
+  final Map<int, BannerAd> _bannerAds = {};
+  final Set<int> _loadedAdIndexes = {};
+
+  static String get _bannerAdUnitId {
+    if (Platform.isAndroid) {
+      return 'ca-app-pub-3940256099942544/6300978111'; // Test Banner ID Android
+    } else if (Platform.isIOS) {
+      return 'ca-app-pub-3940256099942544/2934735716'; // Test Banner ID iOS
+    }
+    throw UnsupportedError('Unsupported platform');
+  }
+
+  @override
+  void dispose() {
+    for (final ad in _bannerAds.values) {
+      ad.dispose();
+    }
+    super.dispose();
+  }
+
+  void _loadBannerAd(int index) {
+    if (_loadedAdIndexes.contains(index)) return;
+    _loadedAdIndexes.add(index);
+
+    final bannerAd = BannerAd(
+      adUnitId: _bannerAdUnitId,
+      size: AdSize.banner, // 320x50 pour s'intégrer dans la liste
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          if (mounted) {
+            setState(() {
+              _bannerAds[index] = ad as BannerAd;
+            });
+          }
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          _loadedAdIndexes.remove(index);
+        },
+      ),
+    );
+    bannerAd.load();
+  }
+
+  // Calcule les positions des pubs : index 0, puis tous les 10 produits
+  List<int> _getAdPositions(int productCount) {
+    List<int> positions = [0]; // Première position = pub
+    for (int i = 10; i < productCount + (productCount ~/ 10) + 1; i += 11) {
+      positions.add(i);
+    }
+    return positions;
+  }
+
+  int _getProductIndex(int listIndex, List<int> adPositions) {
+    int adsBefore = adPositions.where((pos) => pos < listIndex).length;
+    return listIndex - adsBefore;
+  }
+
+  bool _isAdPosition(int index, List<int> adPositions) {
+    return adPositions.contains(index);
+  }
 
   List<Product> get filteredProducts {
     List<Product> tempProducts = products;
@@ -154,108 +220,158 @@ class _ProductsScreenState extends State<ProductsScreen> {
                       ],
                     ),
                   )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(8),
-                    itemCount: filteredProducts.length,
-                    itemBuilder: (context, index) {
-                      final product = filteredProducts[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                          vertical: 6,
-                          horizontal: 4,
-                        ),
-                        elevation: 2,
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.all(12),
-                          leading: CircleAvatar(
-                            radius: 28,
-                            backgroundColor: Theme.of(context).brightness == Brightness.dark
-                                ? Colors.grey[800]
-                                : Colors.grey[100],
-                            child: Text(
-                              product.imageUrl,
-                              style: const TextStyle(fontSize: 28),
-                            ),
-                          ),
-                          title: Text(
-                            product.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  Text(
-                                    'Niveau FODMAP : ',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: Theme.of(context).brightness == Brightness.dark
-                                          ? Colors.grey[300]
-                                          : Colors.black87,
-                                    ),
+                : Builder(
+                    builder: (context) {
+                      final adPositions = _getAdPositions(filteredProducts.length);
+                      final totalItemCount = filteredProducts.length + adPositions.length;
+                      
+                      return ListView.builder(
+                        padding: const EdgeInsets.all(8),
+                        itemCount: totalItemCount,
+                        itemBuilder: (context, index) {
+                          // Vérifier si c'est une position de pub
+                          if (_isAdPosition(index, adPositions)) {
+                            _loadBannerAd(index);
+                            
+                            if (_bannerAds.containsKey(index)) {
+                              return Card(
+                                margin: const EdgeInsets.symmetric(
+                                  vertical: 6,
+                                  horizontal: 4,
+                                ),
+                                elevation: 2,
+                                child: Container(
+                                  alignment: Alignment.center,
+                                  height: _bannerAds[index]!.size.height.toDouble(),
+                                  child: AdWidget(ad: _bannerAds[index]!),
+                                ),
+                              );
+                            } else {
+                              // Placeholder pendant le chargement
+                              return Card(
+                                margin: const EdgeInsets.symmetric(
+                                  vertical: 6,
+                                  horizontal: 4,
+                                ),
+                                elevation: 2,
+                                child: Container(
+                                  height: 50,
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    'Chargement...',
+                                    style: TextStyle(color: Colors.grey[400], fontSize: 12),
                                   ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _getFodmapColor(product.fodmapLevel)
-                                          .withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: _getFodmapColor(product.fodmapLevel),
-                                        width: 1.5,
+                                ),
+                              );
+                            }
+                          }
+                          
+                          // Sinon afficher le produit
+                          final productIndex = _getProductIndex(index, adPositions);
+                          if (productIndex >= filteredProducts.length) {
+                            return const SizedBox.shrink();
+                          }
+                          final product = filteredProducts[productIndex];
+                          
+                          return Card(
+                            margin: const EdgeInsets.symmetric(
+                              vertical: 6,
+                              horizontal: 4,
+                            ),
+                            elevation: 2,
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.all(12),
+                              leading: CircleAvatar(
+                                radius: 28,
+                                backgroundColor: Theme.of(context).brightness == Brightness.dark
+                                    ? Colors.grey[800]
+                                    : Colors.grey[100],
+                                child: Text(
+                                  product.imageUrl,
+                                  style: const TextStyle(fontSize: 28),
+                                ),
+                              ),
+                              title: Text(
+                                product.name,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'Niveau FODMAP : ',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          color: Theme.of(context).brightness == Brightness.dark
+                                              ? Colors.grey[300]
+                                              : Colors.black87,
+                                        ),
                                       ),
-                                    ),
-                                    child: Text(
-                                      product.fodmapLevel,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                        color: _getFodmapColor(product.fodmapLevel),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _getFodmapColor(product.fodmapLevel)
+                                              .withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(
+                                            color: _getFodmapColor(product.fodmapLevel),
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          product.fodmapLevel,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: _getFodmapColor(product.fodmapLevel),
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.restaurant,
+                                        size: 16,
+                                        color: Colors.grey,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Portion autorisée : ${product.allowedPortion}',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: Theme.of(context).brightness == Brightness.dark
+                                              ? Colors.grey[300]
+                                              : Colors.black87,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.restaurant,
-                                    size: 16,
-                                    color: Colors.grey,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Portion autorisée : ${product.allowedPortion}',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Theme.of(context).brightness == Brightness.dark
-                                          ? Colors.grey[300]
-                                          : Colors.black87,
-                                    ),
-                                  ),
-                                ],
+                              trailing: Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                                color: Colors.grey[400],
                               ),
-                            ],
-                          ),
-                          trailing: Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                            color: Colors.grey[400],
-                          ),
-                          onTap: () {
-                            _showProductDetails(context, product);
-                          },
-                        ),
+                              onTap: () {
+                                _showProductDetails(context, product);
+                              },
+                            ),
+                          );
+                        },
                       );
                     },
                   ),

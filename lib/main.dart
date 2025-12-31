@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/scanner_screen.dart';
 import 'screens/products_screen.dart';
 import 'screens/alternatives_screen.dart';
 import 'screens/account_screen.dart';
 import 'screens/tracking_screen.dart';
+import 'screens/welcome_screen.dart';
 import 'providers/theme_provider.dart';
+import 'services/ad_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await initializeDateFormatting('fr_FR', null);
+  await AdService().initialize();
   runApp(
     ChangeNotifierProvider(
       create: (context) => ThemeProvider(),
@@ -176,10 +181,65 @@ class MyApp extends StatelessWidget {
             ),
           ),
           
-          home: const MainScreen(),
+          home: const AppWrapper(),
         );
       },
     );
+  }
+}
+
+class AppWrapper extends StatefulWidget {
+  const AppWrapper({super.key});
+
+  @override
+  State<AppWrapper> createState() => _AppWrapperState();
+}
+
+class _AppWrapperState extends State<AppWrapper> {
+  bool _isLoading = true;
+  bool _showWelcome = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkWelcomeStatus();
+  }
+
+  Future<void> _checkWelcomeStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final welcomeCompleted = prefs.getBool('welcome_completed') ?? false;
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    setState(() {
+      // Afficher l'écran de bienvenue seulement si :
+      // - L'utilisateur n'a pas encore passé/complété l'écran
+      // - ET l'utilisateur n'est pas connecté
+      _showWelcome = !welcomeCompleted && currentUser == null;
+      _isLoading = false;
+    });
+  }
+
+  void _onWelcomeComplete() {
+    setState(() {
+      _showWelcome = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (_showWelcome) {
+      return WelcomeScreen(onComplete: _onWelcomeComplete);
+    }
+
+    return const MainScreen();
   }
 }
 
@@ -196,8 +256,8 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> _screens = [
     const ScannerScreen(),
     const ProductsScreen(),
-    const AlternativesScreen(),
     const TrackingScreen(),
+    const AlternativesScreen(),
     const AccountScreen(),
   ];
 
@@ -224,14 +284,14 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Fodmaps',
           ),
           NavigationDestination(
-            icon: Icon(Icons.lightbulb_outline),
-            selectedIcon: Icon(Icons.lightbulb),
-            label: 'Alternatifs',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.event_note_outlined),
             selectedIcon: Icon(Icons.event_note),
             label: 'Suivi',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.lightbulb_outline),
+            selectedIcon: Icon(Icons.lightbulb),
+            label: 'Alternatifs',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

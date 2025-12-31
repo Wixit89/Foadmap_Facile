@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/openfoodfacts_service.dart';
 import '../services/fodmap_service.dart';
 import '../services/database_service.dart';
 import '../services/alternatives_service.dart';
+import '../services/ad_service.dart';
 import '../models/scan_history.dart';
 import '../models/alternative_product.dart';
 import '../widgets/feedback_dialog.dart';
@@ -37,10 +39,31 @@ class _ScannerScreenState extends State<ScannerScreen> {
 
   final OpenFoodFactsService _foodService = OpenFoodFactsService();
   final DatabaseService _dbService = DatabaseService();
+  final AdService _adService = AdService();
+  bool _isBannerAdReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBannerAd();
+  }
+
+  void _loadBannerAd() {
+    _adService.loadBannerAd(
+      onAdLoaded: () {
+        if (mounted) {
+          setState(() {
+            _isBannerAdReady = true;
+          });
+        }
+      },
+    );
+  }
 
   @override
   void dispose() {
     cameraController.dispose();
+    _adService.disposeBannerAd();
     super.dispose();
   }
 
@@ -456,62 +479,29 @@ class _ScannerScreenState extends State<ScannerScreen> {
           
           // Menu de test avec produits
           if (!isScanning)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Column(
-                children: [
-                  Text(
-                    'Tests rapides',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[700],
-                    ),
+            // Bannière publicitaire AdMob
+            if (_isBannerAdReady && _adService.bannerAd != null)
+              Container(
+                alignment: Alignment.center,
+                width: _adService.bannerAd!.size.width.toDouble(),
+                height: _adService.bannerAd!.size.height.toDouble(),
+                margin: const EdgeInsets.symmetric(vertical: 8.0),
+                child: AdWidget(ad: _adService.bannerAd!),
+              )
+            else
+              Container(
+                height: 250,
+                margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                decoration: BoxDecoration(
+                  color: Colors.grey[200],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Center(
+                  child: Text(
+                    'Chargement...',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 12),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      // Produits connus (avec FODMAPs)
-                      Expanded(
-                        child: Column(
-                          children: [
-                            _buildTestButton(
-                              '🍫 Nutella',
-                              '3017620422003',
-                              Colors.red.shade700,
-                            ),
-                            const SizedBox(height: 8),
-                            _buildTestButton(
-                              '🥛 Danette',
-                              '3760336830586',
-                              Colors.red.shade700,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Alternatives S2I (sans FODMAPs)
-                      Expanded(
-                        child: Column(
-                          children: [
-                            _buildTestButton(
-                              '✓ Pâtes s/gluten',
-                              '3760324841174',
-                              Colors.green.shade700,
-                            ),
-                            const SizedBox(height: 8),
-                            _buildTestButton(
-                              '✓ Maïs doux bio',
-                              '3596710479955',
-                              Colors.green.shade700,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                ),
             ),
         ],
       ),
@@ -1420,25 +1410,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
       default:
         return 0;
     }
-  }
-
-  Widget _buildTestButton(String label, String barcode, Color color) {
-    return OutlinedButton(
-      onPressed: () => _fetchProductInfo(barcode),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: color,
-        side: BorderSide(color: color.withOpacity(0.5), width: 1.5),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-        textAlign: TextAlign.center,
-      ),
-    );
   }
 
   List<AlternativeProduct> _getSuggestedProducts(String? categories) {

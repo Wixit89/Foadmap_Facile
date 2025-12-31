@@ -1,8 +1,11 @@
-import 'dart:io' show Platform;
+import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:intl/intl.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../providers/theme_provider.dart';
@@ -475,6 +478,14 @@ class _AccountScreenState extends State<AccountScreen> {
               );
             },
           ),
+          _buildMenuItem(
+            icon: Icons.download,
+            title: 'Exporter mon calendrier',
+            subtitle: 'Télécharger un CSV pour votre médecin',
+            onTap: () {
+              _exportCalendarToCsv();
+            },
+          ),
 
           const Divider(),
 
@@ -777,7 +788,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               SizedBox(height: 8),
-              Text('Consultez la documentation complète dans les fichiers README.md et GUIDE_*.md'),
+              Text('Contactez nous a  l adresse noreply@kovaserv.fr pour toute question ou suggestion.'),
             ],
           ),
         ),
@@ -1097,5 +1108,120 @@ class _AccountScreenState extends State<AccountScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _exportCalendarToCsv() async {
+    try {
+      // Afficher un indicateur de chargement
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // Récupérer toutes les données
+      final scans = await _dbService.getAllScans();
+      final symptoms = await _dbService.getAllSymptomLogs();
+      final feedbacks = await _dbService.getAllFeedbacks();
+
+      // Créer un map des feedbacks par scanId
+      final feedbacksByScan = {for (var fb in feedbacks) fb.scanHistoryId: fb};
+
+      // Construire le CSV
+      final StringBuffer csv = StringBuffer();
+      
+      // En-tête
+      csv.writeln('Date,Heure,Moment,Type,Produit,Marque,Niveau FODMAP,FODMAPs détectés,Ballonnements,Douleurs,Gaz,Diarrhée,Irritabilité,Aucun symptôme');
+
+      // Formater les dates
+      final dateFormat = DateFormat('dd/MM/yyyy');
+      final timeFormat = DateFormat('HH:mm');
+
+      // Ajouter les scans
+      for (final scan in scans) {
+        final fb = feedbacksByScan[scan.id];
+        final date = dateFormat.format(scan.dateCalendar);
+        final time = timeFormat.format(scan.scannedAt);
+        final moment = scan.dayPeriod ?? '';
+        final product = _escapeCsv(scan.productName);
+        final brand = _escapeCsv(scan.brand ?? '');
+        final level = scan.riskLevel;
+        
+        // Parser fodmapTypes
+        String fodmapTypesStr = '';
+        if (scan.fodmapTypes != null && scan.fodmapTypes!.isNotEmpty) {
+          try {
+            final decoded = jsonDecode(scan.fodmapTypes!);
+            if (decoded is List) {
+              fodmapTypesStr = decoded.join('; ');
+            }
+          } catch (_) {
+            fodmapTypesStr = scan.fodmapTypes!;
+          }
+        }
+        
+        // Symptômes du feedback
+        final bloating = fb?.hasBloating == true ? 'Oui' : '';
+        final pain = fb?.hasPain == true ? 'Oui' : '';
+        final gas = fb?.hasGas == true ? 'Oui' : '';
+        final noSymptom = fb?.hasNoSymptoms == true ? 'Oui' : '';
+
+        csv.writeln('$date,$time,$moment,Scan,$product,$brand,$level,"$fodmapTypesStr",$bloating,$pain,$gas,,,$noSymptom');
+      }
+
+      // Ajouter les symptômes journaliers (non liés à un scan)
+      for (final symptom in symptoms) {
+        final date = dateFormat.format(symptom.date);
+        final bloating = symptom.hasBloating ? 'Oui' : '';
+        final pain = symptom.hasPain ? 'Oui' : '';
+        final gas = symptom.hasGas ? 'Oui' : '';
+        final diarrhea = symptom.hasDiarrhea ? 'Oui' : '';
+        final irritability = symptom.hasIrritability ? 'Oui' : '';
+        final noSymptom = symptom.hasNoSymptoms ? 'Oui' : '';
+
+        // N'ajouter que si au moins un symptôme est coché
+        if (symptom.hasAny) {
+          csv.writeln('$date,,,Symptôme,,,,,,$bloating,$pain,$gas,$diarrhea,$irritability,$noSymptom');
+        }
+      }
+
+      // Écrire le fichier
+      final directory = await getTemporaryDirectory();
+      final fileName = 'foadmap_suivi_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.csv';
+      final file = File('${directory.path}/$fileName');
+      await file.writeAsString(csv.toString(), encoding: utf8);
+
+      // Fermer l'indicateur de chargement
+      if (mounted) Navigator.pop(context);
+
+      // Partager le fichier
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'Export Foadmap Facile',
+        text: 'Voici mon suivi FODMAP exporté depuis Foadmap Facile.',
+      );
+
+    } catch (e) {
+      // Fermer l'indicateur de chargement si ouvert
+      if (mounted) Navigator.pop(context);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de l\'export: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  String _escapeCsv(String value) {
+    if (value.contains(',') || value.contains('"') || value.contains('\n')) {
+      return '"${value.replaceAll('"', '""')}"';
+    }
+    return value;
   }
 }

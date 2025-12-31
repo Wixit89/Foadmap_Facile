@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'dart:io';
 import '../services/alternatives_service.dart';
 import '../models/alternative_product.dart';
 import 'product_detail_screen.dart';
@@ -15,10 +17,69 @@ class _AlternativesScreenState extends State<AlternativesScreen> {
   List<AlternativeProduct> _displayedProducts = AlternativesService.getAllProducts();
   final TextEditingController _searchController = TextEditingController();
 
+  // Bannières AdMob pour la liste
+  final Map<int, BannerAd> _bannerAds = {};
+  final Set<int> _loadedAdIndexes = {};
+
+  static String get _bannerAdUnitId {
+    if (Platform.isAndroid) {
+      return 'ca-app-pub-3940256099942544/6300978111'; // Test Banner ID Android
+    } else if (Platform.isIOS) {
+      return 'ca-app-pub-3940256099942544/2934735716'; // Test Banner ID iOS
+    }
+    throw UnsupportedError('Unsupported platform');
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
+    for (final ad in _bannerAds.values) {
+      ad.dispose();
+    }
     super.dispose();
+  }
+
+  void _loadBannerAd(int index) {
+    if (_loadedAdIndexes.contains(index)) return;
+    _loadedAdIndexes.add(index);
+
+    final bannerAd = BannerAd(
+      adUnitId: _bannerAdUnitId,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          if (mounted) {
+            setState(() {
+              _bannerAds[index] = ad as BannerAd;
+            });
+          }
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          _loadedAdIndexes.remove(index);
+        },
+      ),
+    );
+    bannerAd.load();
+  }
+
+  // Positions des pubs : tous les 10 produits (après le 10ème, 20ème, etc.)
+  List<int> _getAdPositions(int productCount) {
+    List<int> positions = [];
+    for (int i = 10; i < productCount + (productCount ~/ 10) + 1; i += 11) {
+      positions.add(i);
+    }
+    return positions;
+  }
+
+  int _getProductIndex(int listIndex, List<int> adPositions) {
+    int adsBefore = adPositions.where((pos) => pos < listIndex).length;
+    return listIndex - adsBefore;
+  }
+
+  bool _isAdPosition(int index, List<int> adPositions) {
+    return adPositions.contains(index);
   }
 
   void _filterByCategory(String? category) {
@@ -84,6 +145,45 @@ class _AlternativesScreenState extends State<AlternativesScreen> {
         foregroundColor: Theme.of(context).brightness == Brightness.dark
             ? Colors.white
             : Colors.black,
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.help_outline,
+              color: Colors.grey[600],
+            ),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  title: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.orange[700]),
+                      const SizedBox(width: 8),
+                      const Text('À propos'),
+                    ],
+                  ),
+                  content: const Text(
+                    'Cette base de données est enrichie régulièrement avec de nouveaux produits compatibles SII.\n\n'
+                    'Si vous ne trouvez pas un produit, n\'hésitez pas à revenir plus tard !',
+                    style: TextStyle(fontSize: 15, height: 1.4),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'Compris',
+                        style: TextStyle(color: Colors.orange[700], fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -178,11 +278,55 @@ class _AlternativesScreenState extends State<AlternativesScreen> {
                       ],
                     ),
                   )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    itemCount: _displayedProducts.length,
-                    itemBuilder: (context, index) {
-                      return _buildProductCard(_displayedProducts[index]);
+                : Builder(
+                    builder: (context) {
+                      final adPositions = _getAdPositions(_displayedProducts.length);
+                      final totalItemCount = _displayedProducts.length + adPositions.length;
+                      
+                      return ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        itemCount: totalItemCount,
+                        itemBuilder: (context, index) {
+                          // Vérifier si c'est une position de pub
+                          if (_isAdPosition(index, adPositions)) {
+                            _loadBannerAd(index);
+                            
+                            if (_bannerAds.containsKey(index)) {
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                child: Container(
+                                  alignment: Alignment.center,
+                                  height: _bannerAds[index]!.size.height.toDouble(),
+                                  child: AdWidget(ad: _bannerAds[index]!),
+                                ),
+                              );
+                            } else {
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                elevation: 2,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                child: Container(
+                                  height: 50,
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    'Chargement...',
+                                    style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                          
+                          // Sinon afficher le produit
+                          final productIndex = _getProductIndex(index, adPositions);
+                          if (productIndex >= _displayedProducts.length) {
+                            return const SizedBox.shrink();
+                          }
+                          return _buildProductCard(_displayedProducts[productIndex]);
+                        },
+                      );
                     },
                   ),
           ),
