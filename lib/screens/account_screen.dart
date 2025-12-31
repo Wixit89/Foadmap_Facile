@@ -1,4 +1,5 @@
 import 'dart:io' show Platform;
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
@@ -22,10 +23,10 @@ class _AccountScreenState extends State<AccountScreen> {
   User? _currentUser;
   bool _statsLoading = true;
   int _totalScans = 0;
-  int _goodScans = 0;
-  int _badScans = 0;
   int _symptoms7d = 0;
   int _scans7d = 0;
+  String _topFodmap = '-';
+  int _topFodmapCount = 0;
 
   @override
   void initState() {
@@ -41,12 +42,6 @@ class _AccountScreenState extends State<AccountScreen> {
     _loadStats();
   }
 
-  String _formatRatioValue() {
-    if (_goodScans == 0 && _badScans == 0) return '-';
-    if (_badScans == 0) return '∞';
-    final ratio = _goodScans / _badScans;
-    return ratio.toStringAsFixed(1);
-  }
 
   Widget _buildStatCard({
     required IconData icon,
@@ -117,8 +112,6 @@ class _AccountScreenState extends State<AccountScreen> {
     try {
       final scans = await _dbService.getAllScans();
       int total = scans.length;
-      int good = scans.where((s) => s.highFodmapCount == 0 && s.moderateFodmapCount == 0).length;
-      int bad = total - good;
 
       final symptoms = await _dbService.getAllSymptomLogs();
       final now = DateTime.now();
@@ -135,13 +128,72 @@ class _AccountScreenState extends State<AccountScreen> {
         return d.isAfter(sevenDaysAgo) || d.isAtSameMomentAs(sevenDaysAgo);
       }).length;
 
+      // Calculer le FODMAP le plus problématique (associé aux symptômes)
+      final feedbacks = await _dbService.getAllFeedbacks();
+      final scansById = {for (var s in scans) if (s.id != null) s.id!: s};
+      final Map<String, int> fodmapSymptomCount = {};
+      int feedbacksWithSymptoms = 0;
+
+      for (final fb in feedbacks) {
+        // Ignorer les feedbacks explicitement sans symptômes
+        if (fb.hasNoSymptoms) continue;
+        // Vérifier s'il y a au moins un symptôme coché
+        if (!fb.hasBloating && !fb.hasPain && !fb.hasGas) continue;
+        
+        feedbacksWithSymptoms++;
+        
+        final scan = scansById[fb.scanHistoryId];
+        if (scan == null) continue;
+        
+        // Si fodmapTypes est vide, utiliser highFodmapCount/moderateFodmapCount pour estimer
+        if (scan.fodmapTypes == null || scan.fodmapTypes!.isEmpty) {
+          if (scan.highFodmapCount > 0 || scan.moderateFodmapCount > 0) {
+            // Compter comme "Non identifié" si on sait qu'il y a des FODMAPs mais pas le type
+            fodmapSymptomCount['Non identifié'] = (fodmapSymptomCount['Non identifié'] ?? 0) + 1;
+          }
+          continue;
+        }
+
+        // Parser les types de FODMAP (JSON array ou comma-separated)
+        List<String> types = [];
+        try {
+          final decoded = jsonDecode(scan.fodmapTypes!);
+          if (decoded is List) {
+            types = decoded.cast<String>();
+          }
+        } catch (_) {
+          // Fallback: comma-separated
+          types = scan.fodmapTypes!.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+        }
+
+        for (final type in types) {
+          fodmapSymptomCount[type] = (fodmapSymptomCount[type] ?? 0) + 1;
+        }
+      }
+
+      // Trouver le FODMAP le plus fréquent
+      String topFodmap = '-';
+      int topCount = 0;
+      fodmapSymptomCount.forEach((type, count) {
+        if (count > topCount) {
+          topCount = count;
+          topFodmap = type;
+        }
+      });
+      
+      // Si aucun type trouvé mais des feedbacks avec symptômes existent
+      if (topFodmap == '-' && feedbacksWithSymptoms > 0) {
+        topFodmap = 'Données manquantes';
+        topCount = feedbacksWithSymptoms;
+      }
+
       if (!mounted) return;
       setState(() {
         _totalScans = total;
-        _goodScans = good;
-        _badScans = bad;
         _symptoms7d = symptomsCount;
         _scans7d = scansCount7d;
+        _topFodmap = topFodmap;
+        _topFodmapCount = topCount;
         _statsLoading = false;
       });
     } catch (e) {
@@ -319,7 +371,7 @@ class _AccountScreenState extends State<AccountScreen> {
                               ),
                               SizedBox(
                                 width: itemWidth,
-                                child: _buildRatioCard(),
+                                child: _buildTopFodmapCard(),
                               ),
                               SizedBox(
                                 width: itemWidth,
@@ -806,10 +858,9 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
-  Widget _buildRatioCard() {
-    final ratioColor = (_goodScans + _badScans == 0)
-        ? Colors.grey
-        : (_goodScans >= _badScans ? Colors.green : Colors.orange);
+  Widget _buildTopFodmapCard() {
+    final hasData = _topFodmap != '-' && _topFodmapCount > 0;
+    final cardColor = hasData ? Colors.deepOrange : Colors.grey;
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -830,26 +881,29 @@ class _AccountScreenState extends State<AccountScreen> {
         children: [
           Row(
             children: [
-              const Text(
-                'Ratio bon/mauvais',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Text(
+                  'FODMAP problématique',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
               GestureDetector(
                 onTap: () {
                   showDialog(
                     context: context,
                     builder: (context) {
                       return AlertDialog(
-                        title: const Text('Calcul du ratio'),
+                        title: const Text('FODMAP problématique'),
                         content: const Text(
-                          'Le ratio compare le nombre de scans “bons” '
-                          '(aucun FODMAP élevé ni modéré) au nombre de scans “mauvais” '
-                          '(au moins un FODMAP élevé ou modéré). '
-                          'Affichage : bon/mauvais. Couleur : vert si bons ≥ mauvais, orange sinon.',
+                          'Ce FODMAP est celui qui revient le plus souvent dans les produits '
+                          'que vous avez scannés et pour lesquels vous avez signalé des symptômes. '
+                          'Il peut être intéressant de limiter ce type de FODMAP dans votre alimentation.',
                         ),
                         actions: [
                           TextButton(
@@ -876,25 +930,35 @@ class _AccountScreenState extends State<AccountScreen> {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: ratioColor.withOpacity(0.12),
+                  color: cardColor.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.balance, color: ratioColor),
+                child: Icon(Icons.warning_amber_rounded, color: cardColor),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    _formatRatioValue(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: ratioColor,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      _topFodmap,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: cardColor,
+                      ),
                     ),
-                  ),
+                    if (hasData)
+                      Text(
+                        '$_topFodmapCount occurrence${_topFodmapCount > 1 ? 's' : ''}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ],

@@ -23,14 +23,7 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
   bool _hasGas = false;
   bool _hasNoSymptoms = false;
   String? _dayPeriod = '';
-  final TextEditingController _notesController = TextEditingController();
   final DatabaseService _db = DatabaseService();
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    super.dispose();
-  }
 
   Future<void> _saveFeedback() async {
     final now = DateTime.now();
@@ -41,7 +34,6 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
       hasPain: _hasPain,
       hasGas: _hasGas,
       hasNoSymptoms: _hasNoSymptoms,
-      notes: _notesController.text.isEmpty ? null : _notesController.text,
     );
 
     await _db.addFeedback(feedback);
@@ -208,32 +200,6 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
                   });
                 },
                 highlightColor: Colors.green[50],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Notes (optionnel)
-              const Text(
-                'Notes (optionnel)',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              TextField(
-                controller: _notesController,
-                maxLines: 3,
-                decoration: InputDecoration(
-                  hintText: 'Ex: Symptômes apparus 2h après le repas...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                ),
               ),
 
               const SizedBox(height: 24),
