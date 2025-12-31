@@ -576,9 +576,9 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       ),
                     ),
                   const SizedBox(height: 16),
-                  Text(
+                  const Text(
                     'Symptômes du jour',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
@@ -618,21 +618,21 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         ),
                       );
                     }
-                    return Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        if (symptomsForSelectedDay!.hasBloating &&
-                            (symptomProducts['Ballonnements']?.isNotEmpty ?? false))
-                          _buildSymptomChip('Ballonnements', count: symptomProducts['Ballonnements']!.length),
-                        if (symptomsForSelectedDay.hasPain &&
-                            (symptomProducts['Douleurs abdominales']?.isNotEmpty ?? false))
-                          _buildSymptomChip('Douleurs abdominales', count: symptomProducts['Douleurs abdominales']!.length),
-                        if (symptomsForSelectedDay.hasGas &&
-                            (symptomProducts['Gaz']?.isNotEmpty ?? false))
-                          _buildSymptomChip('Gaz', count: symptomProducts['Gaz']!.length),
-                        if (symptomProducts['Diarrhée']?.isNotEmpty ?? false && symptomsForSelectedDay.hasDiarrhea)
-                          _buildSymptomChip('Diarrhée', count: symptomProducts['Diarrhée']!.length),
+                   return Wrap(
+                     spacing: 8,
+                     runSpacing: 8,
+                     children: [
+                       if (symptomsForSelectedDay.hasBloating &&
+                           (symptomProducts['Ballonnements']?.isNotEmpty ?? false))
+                         _buildSymptomChip('Ballonnements', count: symptomProducts['Ballonnements']!.length),
+                       if (symptomsForSelectedDay.hasPain &&
+                           (symptomProducts['Douleurs abdominales']?.isNotEmpty ?? false))
+                         _buildSymptomChip('Douleurs abdominales', count: symptomProducts['Douleurs abdominales']!.length),
+                       if (symptomsForSelectedDay.hasGas &&
+                           (symptomProducts['Gaz']?.isNotEmpty ?? false))
+                         _buildSymptomChip('Gaz', count: symptomProducts['Gaz']!.length),
+                       if ((symptomProducts['Diarrhée']?.isNotEmpty ?? false) && symptomsForSelectedDay.hasDiarrhea)
+                         _buildSymptomChip('Diarrhée', count: symptomProducts['Diarrhée']!.length),
                         if (symptomsForSelectedDay.hasIrritability &&
                             (symptomProducts['Irritabilité']?.isNotEmpty ?? false))
                           _buildSymptomChip('Irritabilité', count: symptomProducts['Irritabilité']!.length),
