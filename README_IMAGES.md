@@ -119,3 +119,4 @@ AlternativeProduct(
 - Vérifie les permissions d'écriture sur `lib/services/alternatives_service.dart`
 
 
+

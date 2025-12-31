@@ -768,13 +768,15 @@ class FodmapService {
 
   static String _calculateOverallScore(int high, int moderate, int low) {
     if (high > 0) {
-      return 'high';
+      return 'high';         // FODMAPs élevés → Rouge (Déconseillé)
     } else if (moderate > 2) {
-      return 'moderate';
-    } else if (moderate > 0 || low > 0) {
-      return 'caution';
+      return 'moderate';     // Plusieurs FODMAPs modérés → Orange foncé (Prudence)
+    } else if (moderate > 0) {
+      return 'caution';      // Quelques FODMAPs modérés → Jaune/Orange clair (Attention)
+    } else if (low > 0) {
+      return 'low';          // Uniquement FODMAPs faibles → Vert clair (OK avec modération)
     } else {
-      return 'safe';
+      return 'safe';         // Aucun FODMAP → Vert (Parfait)
     }
   }
 

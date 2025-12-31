@@ -5,8 +5,11 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/openfoodfacts_service.dart';
 import '../services/fodmap_service.dart';
 import '../services/database_service.dart';
+import '../services/alternatives_service.dart';
 import '../models/scan_history.dart';
+import '../models/alternative_product.dart';
 import '../widgets/feedback_dialog.dart';
+import 'product_detail_screen.dart';
 
 class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
@@ -162,14 +165,14 @@ class _ScannerScreenState extends State<ScannerScreen> {
         });
       } else {
         setState(() {
-          errorMessage = 'Produit non trouvé dans la base OpenFoodFacts';
+          errorMessage = 'not_found';
           isLoading = false;
           showResults = true;
         });
       }
     } catch (e) {
       setState(() {
-        errorMessage = 'Erreur: ${e.toString()}';
+        errorMessage = 'network_error';
         isLoading = false;
         showResults = true;
       });
@@ -186,12 +189,20 @@ class _ScannerScreenState extends State<ScannerScreen> {
     // Sinon, afficher la vue scanner
     return Scaffold(
       appBar: AppBar(
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Image.asset(
+            'Foadmap_Logo.png',
+            width: 48,
+            height: 48,
+          ),
+        ),
         centerTitle: true,
         title: const Text(
-          'Scanner',
+          'Scanner Foadmap Facile',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            fontSize: 20,
+            fontSize: 18,
           ),
         ),
         elevation: 0,
@@ -236,7 +247,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.blue.withOpacity(0.3),
+                                color: const Color(0xFFFF9800).withOpacity(0.3),
                                 blurRadius: 20,
                                 spreadRadius: 5,
                               ),
@@ -260,8 +271,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
                                   height: 30,
                                   decoration: const BoxDecoration(
                                     border: Border(
-                                      top: BorderSide(color: Colors.blue, width: 4),
-                                      left: BorderSide(color: Colors.blue, width: 4),
+                                      top: BorderSide(color: const Color(0xFFFF9800), width: 4),
+                                      left: BorderSide(color: const Color(0xFFFF9800), width: 4),
                                     ),
                                     borderRadius: BorderRadius.only(
                                       topLeft: Radius.circular(20),
@@ -278,8 +289,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
                                   height: 30,
                                   decoration: const BoxDecoration(
                                     border: Border(
-                                      top: BorderSide(color: Colors.blue, width: 4),
-                                      right: BorderSide(color: Colors.blue, width: 4),
+                                      top: BorderSide(color: const Color(0xFFFF9800), width: 4),
+                                      right: BorderSide(color: const Color(0xFFFF9800), width: 4),
                                     ),
                                     borderRadius: BorderRadius.only(
                                       topRight: Radius.circular(20),
@@ -296,8 +307,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
                                   height: 30,
                                   decoration: const BoxDecoration(
                                     border: Border(
-                                      bottom: BorderSide(color: Colors.blue, width: 4),
-                                      left: BorderSide(color: Colors.blue, width: 4),
+                                      bottom: BorderSide(color: const Color(0xFFFF9800), width: 4),
+                                      left: BorderSide(color: const Color(0xFFFF9800), width: 4),
                                     ),
                                     borderRadius: BorderRadius.only(
                                       bottomLeft: Radius.circular(20),
@@ -314,8 +325,8 @@ class _ScannerScreenState extends State<ScannerScreen> {
                                   height: 30,
                                   decoration: const BoxDecoration(
                                     border: Border(
-                                      bottom: BorderSide(color: Colors.blue, width: 4),
-                                      right: BorderSide(color: Colors.blue, width: 4),
+                                      bottom: BorderSide(color: const Color(0xFFFF9800), width: 4),
+                                      right: BorderSide(color: const Color(0xFFFF9800), width: 4),
                                     ),
                                     borderRadius: BorderRadius.only(
                                       bottomRight: Radius.circular(20),
@@ -375,7 +386,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.blue[50]!,
+                          const Color(0xFFFFF3E0), // Orange très clair
                           Colors.white,
                         ],
                       ),
@@ -386,14 +397,14 @@ class _ScannerScreenState extends State<ScannerScreen> {
                         children: [
                           Container(
                             padding: const EdgeInsets.all(30),
-                            decoration: BoxDecoration(
-                              color: Colors.blue[100],
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFFE0B2), // Orange clair
                               shape: BoxShape.circle,
                             ),
-                            child: Icon(
+                            child: const Icon(
                               Icons.qr_code_scanner,
                               size: 80,
-                              color: Colors.blue[700],
+                              color: Color(0xFFFF6F00), // Orange foncé
                             ),
                           ),
                           const SizedBox(height: 30),
@@ -419,22 +430,63 @@ class _ScannerScreenState extends State<ScannerScreen> {
                   ),
           ),
           
-          // Bouton de test avec Nutella
+          // Menu de test avec produits
           if (!isScanning)
             Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: OutlinedButton.icon(
-                onPressed: () => _fetchProductInfo('3017620422003'),
-                icon: const Icon(Icons.science_outlined, size: 20),
-                label: const Text('Test avec Nutella'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.orange[700],
-                  side: BorderSide(color: Colors.orange[300]!),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Column(
+                children: [
+                  Text(
+                    'Tests rapides',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[700],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      // Produits connus (avec FODMAPs)
+                      Expanded(
+                        child: Column(
+                          children: [
+                            _buildTestButton(
+                              '🍫 Nutella',
+                              '3017620422003',
+                              Colors.red.shade700,
+                            ),
+                            const SizedBox(height: 8),
+                            _buildTestButton(
+                              '🥛 Danette',
+                              '3770008009882',
+                              Colors.red.shade700,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Alternatives S2I (sans FODMAPs)
+                      Expanded(
+                        child: Column(
+                          children: [
+                            _buildTestButton(
+                              '✓ Pâtes s/gluten',
+                              '3760324841174',
+                              Colors.green.shade700,
+                            ),
+                            const SizedBox(height: 8),
+                            _buildTestButton(
+                              '✓ Maïs doux bio',
+                              '3596710479955',
+                              Colors.green.shade700,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
         ],
@@ -457,12 +509,12 @@ class _ScannerScreenState extends State<ScannerScreen> {
               gradient: LinearGradient(
                 colors: isScanning
                     ? [Colors.red[400]!, Colors.red[600]!]
-                    : [Colors.blue[400]!, Colors.blue[600]!],
+                    : [const Color(0xFFFFB74D), const Color(0xFFFF9800)], // Orange doux
               ),
               borderRadius: BorderRadius.circular(30),
               boxShadow: [
                 BoxShadow(
-                  color: (isScanning ? Colors.red : Colors.blue).withOpacity(0.4),
+                  color: (isScanning ? Colors.red : const Color(0xFFFF9800)).withOpacity(0.4),
                   blurRadius: 15,
                   offset: const Offset(0, 5),
                 ),
@@ -513,7 +565,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
           onPressed: _backToScanner,
         ),
         title: const Text('Résultats'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.black),
         actions: [
           // Bouton Scanner un autre
           TextButton.icon(
@@ -530,7 +584,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
             icon: const Icon(Icons.qr_code_scanner, size: 20),
             label: const Text('Scanner un autre'),
             style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
+              foregroundColor: Colors.black,
             ),
           ),
           if (lastScanHistoryId != null && productData != null)
@@ -546,7 +600,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
               onPressed: () => _showFeedbackDialog(),
               icon: const Icon(Icons.add_reaction_outlined),
               label: const Text('Noter mes symptômes'),
-              backgroundColor: Colors.blue[600],
+              backgroundColor: const Color(0xFFFF9800),
             )
           : null,
       body: SingleChildScrollView(
@@ -555,26 +609,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (errorMessage != null) ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.error, color: Colors.red),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        errorMessage!,
-                        style: const TextStyle(color: Colors.red),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _buildErrorMessage(errorMessage!),
             ],
             
             if (productData != null) ...[
@@ -595,9 +630,9 @@ class _ScannerScreenState extends State<ScannerScreen> {
                     });
                   },
                   icon: const Icon(Icons.qr_code_scanner),
-                  label: const Text('Scanner un autre produit'),
+                  label: const Text('Nouveau scan'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[600],
+                    backgroundColor: Colors.black,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
@@ -725,11 +760,6 @@ class _ScannerScreenState extends State<ScannerScreen> {
         
         const Divider(height: 24),
         
-        // Catégories
-        _buildInfoRow('Catégories', data['categories']),
-        
-        const Divider(height: 24),
-        
         // Analyse FODMAP
         if (fodmapAnalysis != null && fodmapAnalysis!['analyzed']) ...[
           _buildFodmapAnalysisCard(fodmapAnalysis!),
@@ -797,6 +827,13 @@ class _ScannerScreenState extends State<ScannerScreen> {
             ),
           ),
         ],
+        
+        // Section des produits suggérés
+        _buildSuggestedProductsSection(),
+        
+        // Catégories (déplacées en bas)
+        const Divider(height: 24),
+        _buildInfoRow('Catégories', data['categories']),
         
         const SizedBox(height: 20),
       ],
@@ -903,8 +940,14 @@ class _ScannerScreenState extends State<ScannerScreen> {
       case 'caution':
         cardColor = Colors.yellow[50]!;
         textColor = Colors.orange[700]!;
-        message = '⚠️ ATTENTION - Contient des FODMAPs';
+        message = '⚠️ ATTENTION - Contient des FODMAPs modérés';
         icon = Icons.info;
+        break;
+      case 'low':
+        cardColor = Colors.green[50]!;
+        textColor = Colors.green[700]!;
+        message = '✓ OK - FODMAPs faibles uniquement';
+        icon = Icons.check_circle_outline;
         break;
       case 'safe':
         cardColor = Colors.green[50]!;
@@ -1353,6 +1396,312 @@ class _ScannerScreenState extends State<ScannerScreen> {
       default:
         return 0;
     }
+  }
+
+  Widget _buildTestButton(String label, String barcode, Color color) {
+    return OutlinedButton(
+      onPressed: () => _fetchProductInfo(barcode),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: color,
+        side: BorderSide(color: color.withOpacity(0.5), width: 1.5),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
+  List<AlternativeProduct> _getSuggestedProducts(String? categories) {
+    if (categories == null || categories.isEmpty) {
+      // Si pas de catégories, retourner 3 produits aléatoires
+      final allProducts = AlternativesService.getAllProducts();
+      if (allProducts.length <= 3) return allProducts;
+      allProducts.shuffle();
+      return allProducts.take(3).toList();
+    }
+
+    final categoriesLower = categories.toLowerCase();
+    final allProducts = AlternativesService.getAllProducts();
+    
+    // Filtrer les produits par catégorie similaire
+    List<AlternativeProduct> matchingProducts = [];
+    
+    // Mapper les catégories Open Food Facts vers nos catégories d'alternatives
+    String targetCategory = '';
+    
+    if (categoriesLower.contains('lait') || 
+        categoriesLower.contains('yaourt') || 
+        categoriesLower.contains('fromage') ||
+        categoriesLower.contains('dairy') ||
+        categoriesLower.contains('lactés')) {
+      targetCategory = 'Produits laitiers';
+    } else if (categoriesLower.contains('pain') || 
+               categoriesLower.contains('pâtes') ||
+               categoriesLower.contains('pasta') ||
+               categoriesLower.contains('bread') ||
+               categoriesLower.contains('céréales')) {
+      targetCategory = 'Pains & Pâtes';
+    } else if (categoriesLower.contains('snack') || 
+               categoriesLower.contains('biscuit') ||
+               categoriesLower.contains('gâteau') ||
+               categoriesLower.contains('dessert') ||
+               categoriesLower.contains('petit-déjeuner')) {
+      targetCategory = 'Snacks & Petit-déjeuner';
+    }
+    
+    if (targetCategory.isNotEmpty) {
+      matchingProducts = allProducts
+          .where((p) => p.category == targetCategory)
+          .toList();
+    }
+    
+    // Si pas assez de produits correspondants, ajouter des produits généraux
+    if (matchingProducts.length < 3) {
+      matchingProducts.addAll(
+        allProducts.where((p) => !matchingProducts.contains(p)).take(3 - matchingProducts.length)
+      );
+    }
+    
+    // Shuffle et prendre 3
+    matchingProducts.shuffle();
+    return matchingProducts.take(3).toList();
+  }
+
+  Widget _buildSuggestedProductsSection() {
+    if (productData == null) return const SizedBox.shrink();
+    
+    final suggestions = _getSuggestedProducts(productData!['categories']);
+    
+    if (suggestions.isEmpty) return const SizedBox.shrink();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 24),
+        const Text(
+          'Produits de remplacement suggérés',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 140,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: suggestions.length,
+            itemBuilder: (context, index) {
+              final product = suggestions[index];
+              return _buildSuggestionCard(product);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuggestionCard(AlternativeProduct product) {
+    return InkWell(
+      onTap: () {
+        if (product.barcode != null && product.barcode!.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProductDetailScreen(
+                barcode: product.barcode!,
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Code-barres non disponible pour ce produit.'),
+            ),
+          );
+        }
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green[200]!, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image ou emoji
+            Container(
+              height: 70,
+              decoration: BoxDecoration(
+                color: Colors.green[50],
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+              ),
+              child: Center(
+                child: product.imageUrl != null && product.imageUrl!.isNotEmpty
+                    ? ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
+                        ),
+                        child: Image.network(
+                          product.imageUrl!,
+                          height: 70,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Text(
+                              product.emoji,
+                              style: const TextStyle(fontSize: 40),
+                            );
+                          },
+                        ),
+                      )
+                    : Text(
+                        product.emoji,
+                        style: const TextStyle(fontSize: 40),
+                      ),
+              ),
+            ),
+            // Info produit
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product.name,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      product.brand,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey[600],
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorMessage(String errorType) {
+    IconData icon;
+    String title;
+    String message;
+    String subtitle;
+
+    if (errorType == 'not_found') {
+      icon = Icons.search_off_rounded;
+      title = 'Oups !';
+      message = 'Le produit n\'a pas été trouvé';
+      subtitle = 'Il n\'est peut-être pas encore dans la base';
+    } else {
+      icon = Icons.wifi_off_rounded;
+      title = 'Oups !';
+      message = 'Impossible de charger le produit';
+      subtitle = 'Vérifiez votre connexion internet';
+    }
+
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.orange.shade200,
+            width: 2,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.orange.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                icon,
+                color: Colors.orange.shade600,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange.shade800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade500,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
 }

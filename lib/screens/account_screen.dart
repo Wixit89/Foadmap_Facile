@@ -40,6 +40,14 @@ class _AccountScreenState extends State<AccountScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Image.asset(
+            'Foadmap_Logo.png',
+            width: 48,
+            height: 48,
+          ),
+        ),
         centerTitle: true,
         title: const Text(
           'Compte',
@@ -254,6 +262,38 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ],
 
+          const SizedBox(height: 20),
+          
+          // Logo centré en bas
+          Center(
+            child: Column(
+              children: [
+                Image.asset(
+                  'Foadmap_Logo.png',
+                  width: 80,
+                  height: 80,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Foadmap Facile',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFFF6F00),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Gestion des FODMAPs',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
           const SizedBox(height: 40),
         ],
       ),

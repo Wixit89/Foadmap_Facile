@@ -27,44 +27,140 @@ class MyApp extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         if (themeProvider.isLoading) {
-          return const MaterialApp(
+          return MaterialApp(
             debugShowCheckedModeBanner: false,
             home: Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
+              body: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFFFF9800),
+                      Color(0xFFFF6F00),
+                    ],
+                  ),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Logo
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 20,
+                              spreadRadius: 5,
+                            ),
+                          ],
+                        ),
+                        child: Image.asset(
+                          'Foadmap_Logo.png',
+                          width: 120,
+                          height: 120,
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      // Nom de l'app
+                      const Text(
+                        'Foadmap Facile',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Gestion des FODMAPs',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white70,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 50),
+                      // Indicateur de chargement
+                      const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           );
         }
 
         return MaterialApp(
-          title: 'App Android',
+          title: 'Foadmap Facile',
           debugShowCheckedModeBanner: false,
           themeMode: themeProvider.themeMode,
           
-          // Thème clair
+          // Thème clair - Orange doux
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.blue,
+              seedColor: const Color(0xFFFF9800), // Orange du logo
               brightness: Brightness.light,
+              primary: const Color(0xFFFF9800),
+              secondary: const Color(0xFFFFB74D),
             ),
             useMaterial3: true,
-            appBarTheme: const AppBarTheme(
+            scaffoldBackgroundColor: Colors.grey[50],
+            appBarTheme: AppBarTheme(
               centerTitle: true,
               elevation: 0,
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFFFF6F00),
+            ),
+            navigationBarTheme: NavigationBarThemeData(
+              backgroundColor: Colors.white,
+              indicatorColor: const Color(0xFFFF9800).withOpacity(0.15),
+              labelTextStyle: MaterialStateProperty.resolveWith((states) {
+                if (states.contains(MaterialState.selected)) {
+                  return const TextStyle(
+                    color: Color(0xFFFF6F00),
+                    fontWeight: FontWeight.bold,
+                  );
+                }
+                return TextStyle(color: Colors.grey[600]);
+              }),
+            ),
+            cardTheme: CardThemeData(
+              elevation: 1,
+              color: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            floatingActionButtonTheme: const FloatingActionButtonThemeData(
+              backgroundColor: Color(0xFFFF9800),
+              foregroundColor: Colors.white,
             ),
           ),
           
-          // Thème sombre
+          // Thème sombre - Orange doux sur fond sombre
           darkTheme: ThemeData(
             colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.blue,
+              seedColor: const Color(0xFFFF9800),
               brightness: Brightness.dark,
+              primary: const Color(0xFFFFB74D),
+              secondary: const Color(0xFFFF9800),
             ),
             useMaterial3: true,
             appBarTheme: const AppBarTheme(
               centerTitle: true,
               elevation: 0,
+            ),
+            navigationBarTheme: NavigationBarThemeData(
+              indicatorColor: const Color(0xFFFF9800).withOpacity(0.3),
             ),
           ),
           

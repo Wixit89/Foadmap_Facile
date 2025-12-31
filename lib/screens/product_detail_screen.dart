@@ -134,13 +134,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         });
       } else {
         setState(() {
-          errorMessage = 'Produit non trouvé dans la base de données Open Food Facts.';
+          errorMessage = 'not_found';
           isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        errorMessage = 'Erreur: ${e.toString()}';
+        errorMessage = 'network_error';
         isLoading = false;
       });
     }
@@ -169,17 +169,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       appBar: AppBar(
         centerTitle: true,
         title: const Text(
-          'Détails du produit',
+          'Résultats',
           style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 20,
+            color: Colors.black,
           ),
         ),
         elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: Theme.of(context).brightness == Brightness.dark
-            ? Colors.white
-            : Colors.black,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.black),
         actions: [
           if (scanHistoryId != null && productData != null && errorMessage == null)
             IconButton(
@@ -194,7 +194,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               onPressed: () => _showFeedbackDialog(),
               icon: const Icon(Icons.add_reaction_outlined),
               label: const Text('Noter mes symptômes'),
-              backgroundColor: Colors.blue[600],
+              backgroundColor: const Color(0xFFFF9800),
             )
           : null,
       body: isLoading
@@ -205,26 +205,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (errorMessage != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.red[50],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.error, color: Colors.red),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              errorMessage!,
-                              style: const TextStyle(color: Colors.red),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    _buildErrorMessage(errorMessage!),
                   ],
                   
                   if (productData != null) ...[
@@ -787,6 +768,92 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       default:
         return 0;
     }
+  }
+
+  Widget _buildErrorMessage(String errorType) {
+    IconData icon;
+    String title;
+    String message;
+    String subtitle;
+
+    if (errorType == 'not_found') {
+      icon = Icons.search_off_rounded;
+      title = 'Oups !';
+      message = 'Le produit n\'a pas été trouvé';
+      subtitle = 'Il n\'est peut-être pas encore dans la base';
+    } else {
+      icon = Icons.wifi_off_rounded;
+      title = 'Oups !';
+      message = 'Impossible de charger le produit';
+      subtitle = 'Vérifiez votre connexion internet';
+    }
+
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        margin: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.orange.shade200,
+            width: 2,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.orange.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                icon,
+                color: Colors.orange.shade600,
+                size: 48,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.orange.shade800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade500,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

@@ -62,6 +62,14 @@ class _ProductsScreenState extends State<ProductsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Image.asset(
+            'Foadmap_Logo.png',
+            width: 48,
+            height: 48,
+          ),
+        ),
         centerTitle: true,
         title: const Text(
           'Aliments FODMAP',

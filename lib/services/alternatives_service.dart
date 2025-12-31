@@ -1119,6 +1119,17 @@ class AlternativesService {
       imageUrl: 'https://images.openfoodfacts.org/images/products/353/828/003/1515/front_fr.46.400.jpg',
       emoji: '🌿',
     ),
+    AlternativeProduct(
+      id: 108,
+      name: 'Les fourrées cacao noisette',
+      brand: 'Funkie',
+      category: 'Pains & Pâtes',
+      barcode: '3760336830586',
+      availability: 'Intermarché',
+      benefits: ['Sans gluten', 'Pauvre en sucre'],
+      imageUrl: 'https://images.openfoodfacts.org/images/products/377/000/800/9882/front_fr.76.400.jpg',
+      emoji: '🌿',
+    ),
   ];
 
   static List<AlternativeProduct> getAllProducts() {
@@ -1142,3 +1153,4 @@ class AlternativesService {
     return products.map((p) => p.category).toSet().toList()..sort();
   }
 }
+

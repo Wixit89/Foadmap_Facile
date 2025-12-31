@@ -66,6 +66,14 @@ class _AlternativesScreenState extends State<AlternativesScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Image.asset(
+            'Foadmap_Logo.png',
+            width: 48,
+            height: 48,
+          ),
+        ),
         centerTitle: true,
         title: const Text(
           'Produits Alternatifs',
@@ -306,14 +314,14 @@ class _AlternativesScreenState extends State<AlternativesScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.blue[100],
+                          color: const Color(0xFFFFE0B2), // Orange clair
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           product.category,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 11,
-                            color: Colors.blue[900],
+                            color: Color(0xFFFF6F00), // Orange foncé
                             fontWeight: FontWeight.w600,
                           ),
                         ),
