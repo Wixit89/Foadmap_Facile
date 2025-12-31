@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/fodmap_feedback.dart';
 import '../services/database_service.dart';
+import '../models/symptom_log.dart';
 
 class FeedbackDialog extends StatefulWidget {
   final int scanHistoryId;
@@ -21,6 +22,7 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
   bool _hasPain = false;
   bool _hasGas = false;
   bool _hasNoSymptoms = false;
+  String? _dayPeriod = '';
   final TextEditingController _notesController = TextEditingController();
   final DatabaseService _db = DatabaseService();
 
@@ -31,9 +33,10 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
   }
 
   Future<void> _saveFeedback() async {
+    final now = DateTime.now();
     final feedback = FodmapFeedback(
       scanHistoryId: widget.scanHistoryId,
-      feedbackDate: DateTime.now(),
+      feedbackDate: now,
       hasBloating: _hasBloating,
       hasPain: _hasPain,
       hasGas: _hasGas,
@@ -42,6 +45,18 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
     );
 
     await _db.addFeedback(feedback);
+    await _db.updateScanDayPeriod(widget.scanHistoryId, _dayPeriod);
+
+    // Journaliser aussi dans le calendrier (symptoms_log)
+    final symptomLog = SymptomLog(
+      date: DateTime(now.year, now.month, now.day),
+      hasBloating: _hasBloating,
+      hasPain: _hasPain,
+      hasGas: _hasGas,
+      hasDiarrhea: false,
+      hasIrritability: false,
+    );
+    await _db.upsertSymptomLog(symptomLog);
     
     if (mounted) {
       Navigator.pop(context, true);
@@ -102,6 +117,36 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
 
               const SizedBox(height: 24),
 
+              // Moment
+              const Text(
+                'Moment de la journée',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              RadioListTile<String>(
+                value: 'Matin',
+                groupValue: _dayPeriod,
+                onChanged: (v) => setState(() => _dayPeriod = v),
+                title: const Text('Matin'),
+              ),
+              RadioListTile<String>(
+                value: 'Midi',
+                groupValue: _dayPeriod,
+                onChanged: (v) => setState(() => _dayPeriod = v),
+                title: const Text('Midi'),
+              ),
+              RadioListTile<String>(
+                value: 'Soir',
+                groupValue: _dayPeriod,
+                onChanged: (v) => setState(() => _dayPeriod = v),
+                title: const Text('Soir'),
+              ),
+
+              const Divider(height: 32),
+
               // Symptômes
               const Text(
                 'Symptômes ressentis',
@@ -157,6 +202,7 @@ class _FeedbackDialogState extends State<FeedbackDialog> {
                     if (val == true) {
                       _hasBloating = false;
                       _hasPain = false;
+                      _hasGas = false;
                       _hasGas = false;
                     }
                   });

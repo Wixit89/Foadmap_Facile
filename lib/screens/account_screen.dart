@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../services/database_service.dart';
 import '../providers/theme_provider.dart';
+import '../models/symptom_log.dart';
 import 'profile_screen.dart';
 import 'digestive_profile_screen.dart';
 
@@ -16,7 +18,14 @@ class AccountScreen extends StatefulWidget {
 
 class _AccountScreenState extends State<AccountScreen> {
   final AuthService _authService = AuthService();
+  final DatabaseService _dbService = DatabaseService();
   User? _currentUser;
+  bool _statsLoading = true;
+  int _totalScans = 0;
+  int _goodScans = 0;
+  int _badScans = 0;
+  int _symptoms7d = 0;
+  int _scans7d = 0;
 
   @override
   void initState() {
@@ -29,6 +38,118 @@ class _AccountScreenState extends State<AccountScreen> {
     });
     // Initialiser avec l'utilisateur actuel
     _currentUser = _authService.currentUser;
+    _loadStats();
+  }
+
+  String _formatRatioValue() {
+    if (_goodScans == 0 && _badScans == 0) return '-';
+    if (_badScans == 0) return '∞';
+    final ratio = _goodScans / _badScans;
+    return ratio.toStringAsFixed(1);
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final scans = await _dbService.getAllScans();
+      int total = scans.length;
+      int good = scans.where((s) => s.highFodmapCount == 0 && s.moderateFodmapCount == 0).length;
+      int bad = total - good;
+
+      final symptoms = await _dbService.getAllSymptomLogs();
+      final now = DateTime.now();
+      final sevenDaysAgo = now.subtract(const Duration(days: 7));
+      int symptomsCount = symptoms.where((SymptomLog log) {
+        final d = DateTime(log.date.year, log.date.month, log.date.day);
+        final inRange = d.isAfter(sevenDaysAgo) || d.isAtSameMomentAs(sevenDaysAgo);
+        // Exclure les jours marqués "aucun symptôme" uniquement
+        final hasRealSymptoms = log.hasAny && !log.hasNoSymptoms;
+        return inRange && hasRealSymptoms;
+      }).length;
+      int scansCount7d = scans.where((s) {
+        final d = DateTime(s.scannedAt.year, s.scannedAt.month, s.scannedAt.day);
+        return d.isAfter(sevenDaysAgo) || d.isAtSameMomentAs(sevenDaysAgo);
+      }).length;
+
+      if (!mounted) return;
+      setState(() {
+        _totalScans = total;
+        _goodScans = good;
+        _badScans = bad;
+        _symptoms7d = symptomsCount;
+        _scans7d = scansCount7d;
+        _statsLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _statsLoading = false;
+      });
+    }
   }
 
   @override
@@ -162,6 +283,70 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ),
           
+          const SizedBox(height: 8),
+
+          // Stats
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Statistiques',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _statsLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          final itemWidth = (constraints.maxWidth - 12) / 2;
+                          return Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              SizedBox(
+                                width: itemWidth,
+                                child: _buildStatCard(
+                                  icon: Icons.qr_code_scanner,
+                                  title: 'Scans total',
+                                  value: '$_totalScans',
+                                  color: const Color(0xFFFF9800),
+                                ),
+                              ),
+                              SizedBox(
+                                width: itemWidth,
+                                child: _buildRatioCard(),
+                              ),
+                              SizedBox(
+                                width: itemWidth,
+                                child: _buildStatCard(
+                                  icon: Icons.monitor_heart,
+                                  title: 'Symptômes sur 7 jours',
+                                  value: '$_symptoms7d',
+                                  color: Colors.red,
+                                ),
+                              ),
+                              SizedBox(
+                                width: itemWidth,
+                                child: _buildStatCard(
+                                  icon: Icons.history_toggle_off,
+                                  title: 'Scans sur 7 jours',
+                                  value: '$_scans7d',
+                                  color: Colors.indigo,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+              ],
+            ),
+          ),
+
           const SizedBox(height: 8),
 
           // Santé digestive
@@ -615,6 +800,104 @@ class _AccountScreenState extends State<AccountScreen> {
               foregroundColor: Colors.white,
             ),
             child: const Text('Déconnecter'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatioCard() {
+    final ratioColor = (_goodScans + _badScans == 0)
+        ? Colors.grey
+        : (_goodScans >= _badScans ? Colors.green : Colors.orange);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text(
+                'Ratio bon/mauvais',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(width: 6),
+              GestureDetector(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: const Text('Calcul du ratio'),
+                        content: const Text(
+                          'Le ratio compare le nombre de scans “bons” '
+                          '(aucun FODMAP élevé ni modéré) au nombre de scans “mauvais” '
+                          '(au moins un FODMAP élevé ou modéré). '
+                          'Affichage : bon/mauvais. Couleur : vert si bons ≥ mauvais, orange sinon.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('OK'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+                child: Icon(
+                  Icons.help_outline,
+                  size: 16,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: ratioColor.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.balance, color: ratioColor),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    _formatRatioValue(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: ratioColor,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

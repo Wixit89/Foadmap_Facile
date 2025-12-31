@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'screens/scanner_screen.dart';
 import 'screens/products_screen.dart';
-import 'screens/history_screen.dart';
 import 'screens/alternatives_screen.dart';
 import 'screens/account_screen.dart';
+import 'screens/tracking_screen.dart';
 import 'providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  await initializeDateFormatting('fr_FR', null);
   runApp(
     ChangeNotifierProvider(
       create: (context) => ThemeProvider(),
@@ -102,6 +105,15 @@ class MyApp extends StatelessWidget {
           title: 'Foadmap Facile',
           debugShowCheckedModeBanner: false,
           themeMode: themeProvider.themeMode,
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('fr', 'FR'),
+            Locale('en', 'US'),
+          ],
           
           // Thème clair - Orange doux
           theme: ThemeData(
@@ -185,7 +197,7 @@ class _MainScreenState extends State<MainScreen> {
     const ScannerScreen(),
     const ProductsScreen(),
     const AlternativesScreen(),
-    const HistoryScreen(),
+    const TrackingScreen(),
     const AccountScreen(),
   ];
 
@@ -217,9 +229,9 @@ class _MainScreenState extends State<MainScreen> {
             label: 'Alternatifs',
           ),
           NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
-            label: 'Historique',
+            icon: Icon(Icons.event_note_outlined),
+            selectedIcon: Icon(Icons.event_note),
+            label: 'Suivi',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

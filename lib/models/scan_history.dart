@@ -5,6 +5,8 @@ class ScanHistory {
   final String? brand;
   final String? imageUrl;
   final DateTime scannedAt;
+  final DateTime dateCalendar;
+  final String? dayPeriod; // matin/midi/soir
   final int ingredientCount;
   final int highFodmapCount;
   final int moderateFodmapCount;
@@ -19,6 +21,8 @@ class ScanHistory {
     this.brand,
     this.imageUrl,
     required this.scannedAt,
+    required this.dateCalendar,
+    this.dayPeriod,
     this.ingredientCount = 0,
     this.highFodmapCount = 0,
     this.moderateFodmapCount = 0,
@@ -36,6 +40,8 @@ class ScanHistory {
       'brand': brand,
       'imageUrl': imageUrl,
       'scannedAt': scannedAt.toIso8601String(),
+      'dateCalendar': dateCalendar.toIso8601String(),
+      'dayPeriod': dayPeriod,
       'ingredientCount': ingredientCount,
       'highFodmapCount': highFodmapCount,
       'moderateFodmapCount': moderateFodmapCount,
@@ -54,6 +60,9 @@ class ScanHistory {
       brand: map['brand'] as String?,
       imageUrl: map['imageUrl'] as String?,
       scannedAt: DateTime.parse(map['scannedAt'] as String),
+      dateCalendar: DateTime.tryParse(map['dateCalendar'] as String? ?? '') ??
+          DateTime.parse(map['scannedAt'] as String),
+      dayPeriod: map['dayPeriod'] as String?,
       ingredientCount: map['ingredientCount'] as int? ?? 0,
       highFodmapCount: map['highFodmapCount'] as int? ?? 0,
       moderateFodmapCount: map['moderateFodmapCount'] as int? ?? 0,

@@ -10,9 +10,12 @@ import '../models/scan_history.dart';
 import '../models/alternative_product.dart';
 import '../widgets/feedback_dialog.dart';
 import 'product_detail_screen.dart';
+import 'history_screen.dart';
 
 class ScannerScreen extends StatefulWidget {
-  const ScannerScreen({super.key});
+  final bool showBackButton;
+
+  const ScannerScreen({super.key, this.showBackButton = false});
 
   @override
   State<ScannerScreen> createState() => _ScannerScreenState();
@@ -146,6 +149,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
           brand: extractedData['brands'],
           imageUrl: extractedData['image_url'],
           scannedAt: DateTime.now(),
+          dateCalendar: DateTime.now(),
           ingredientCount: (analysis['ingredients'] as List?)?.length ?? 0,
           highFodmapCount: analysis['highFodmapCount'] as int? ?? 0,
           moderateFodmapCount: analysis['moderateFodmapCount'] as int? ?? 0,
@@ -156,6 +160,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
         // Sauvegarder et récupérer l'ID
         final scanId = await _dbService.addScan(scanHistory);
         
+        if (!mounted) return;
         setState(() {
           productData = extractedData;
           fodmapAnalysis = analysis;
@@ -164,6 +169,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
           lastScanHistoryId = scanId;
         });
       } else {
+        if (!mounted) return;
         setState(() {
           errorMessage = 'not_found';
           isLoading = false;
@@ -171,6 +177,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         errorMessage = 'network_error';
         isLoading = false;
@@ -189,14 +196,19 @@ class _ScannerScreenState extends State<ScannerScreen> {
     // Sinon, afficher la vue scanner
     return Scaffold(
       appBar: AppBar(
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Image.asset(
-            'Foadmap_Logo.png',
-            width: 48,
-            height: 48,
-          ),
-        ),
+        leading: widget.showBackButton
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => Navigator.pop(context),
+              )
+            : Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Image.asset(
+                  'Foadmap_Logo.png',
+                  width: 48,
+                  height: 48,
+                ),
+              ),
         centerTitle: true,
         title: const Text(
           'Scanner Foadmap Facile',
@@ -210,6 +222,18 @@ class _ScannerScreenState extends State<ScannerScreen> {
         foregroundColor: Theme.of(context).brightness == Brightness.dark
             ? Colors.white
             : Colors.black,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Historique',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const HistoryScreen()),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -459,7 +483,7 @@ class _ScannerScreenState extends State<ScannerScreen> {
                             const SizedBox(height: 8),
                             _buildTestButton(
                               '🥛 Danette',
-                              '3770008009882',
+                              '3760336830586',
                               Colors.red.shade700,
                             ),
                           ],

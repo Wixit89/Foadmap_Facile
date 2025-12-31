@@ -116,6 +116,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             brand: extractedData['brands'],
             imageUrl: extractedData['image_url'],
             scannedAt: DateTime.now(),
+            dateCalendar: DateTime.now(),
             ingredientCount: (analysis['ingredients'] as List?)?.length ?? 0,
             highFodmapCount: analysis['highFodmapCount'] as int? ?? 0,
             moderateFodmapCount: analysis['moderateFodmapCount'] as int? ?? 0,
