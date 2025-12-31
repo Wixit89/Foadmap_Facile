@@ -347,6 +347,31 @@ class DatabaseService {
     }
   }
 
+  /// Remplace entièrement les symptômes d'une date (sans fusion),
+  /// pour permettre de décocher/retirer des symptômes ajoutés manuellement.
+  Future<int> replaceSymptomLog(SymptomLog log) async {
+    final db = await database;
+    await _ensureCoreTables(db);
+    final existing = await _getSymptomLogByDate(db, log.date);
+
+    final map = log.toMap()..remove('id');
+
+    if (existing != null) {
+      return await db.update(
+        'symptoms_log',
+        map,
+        where: 'id = ?',
+        whereArgs: [existing.id],
+      );
+    }
+
+    return await db.insert(
+      'symptoms_log',
+      map,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
   Future<List<SymptomLog>> getAllSymptomLogs() async {
     try {
       final db = await database;

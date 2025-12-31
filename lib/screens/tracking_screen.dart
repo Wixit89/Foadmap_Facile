@@ -97,6 +97,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
     bool bloating = existing?.hasBloating == true;
     bool pain = existing?.hasPain == true;
+    bool gas = existing?.hasGas == true;
     bool diarrhea = existing?.hasDiarrhea == true;
     bool irritability = existing?.hasIrritability == true;
     bool noSymptoms = existing?.hasNoSymptoms == true;
@@ -122,6 +123,11 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     title: const Text('Douleurs abdominales'),
                   ),
                   CheckboxListTile(
+                    value: gas,
+                    onChanged: (v) => setStateDialog(() => gas = v ?? false),
+                    title: const Text('Gaz'),
+                  ),
+                  CheckboxListTile(
                     value: diarrhea,
                     onChanged: (v) => setStateDialog(() => diarrhea = v ?? false),
                     title: const Text('Diarrhée'),
@@ -140,6 +146,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         if (noSymptoms) {
                           bloating = false;
                           pain = false;
+                          gas = false;
                           diarrhea = false;
                           irritability = false;
                         }
@@ -164,12 +171,13 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       ),
                       hasBloating: bloating,
                       hasPain: pain,
+                      hasGas: gas,
                       hasDiarrhea: diarrhea,
                       hasIrritability: irritability,
                       hasNoSymptoms: noSymptoms,
                     );
                     try {
-                      await _dbService.upsertSymptomLog(log);
+                      await _dbService.replaceSymptomLog(log);
                       await _loadHistory();
                       if (mounted) Navigator.pop(context);
                       if (mounted) {
@@ -240,14 +248,12 @@ class _TrackingScreenState extends State<TrackingScreen> {
             hasNoSymptoms: false,
           );
       final bool hasNoSymptoms = logSafe.hasNoSymptoms;
-      final Map<String, List<ScanHistory>> prodsForDay = _getSymptomProductsForDate(date);
-      final int productSymptomCount = (prodsForDay['Ballonnements']?.length ?? 0) +
-          (prodsForDay['Douleurs abdominales']?.length ?? 0) +
-          (prodsForDay['Gaz']?.length ?? 0) +
-          (prodsForDay['Diarrhée']?.length ?? 0) +
-          (prodsForDay['Irritabilité']?.length ?? 0);
-      final bool showGreenDot = hasSymptoms && hasNoSymptoms && productSymptomCount == 0;
-      final bool showRedDot = hasSymptoms && productSymptomCount > 0;
+      // Symptômes réels (manuels ou via produits)
+      final bool hasRealSymptoms = logSafe.hasBloating || logSafe.hasPain || logSafe.hasGas || logSafe.hasDiarrhea || logSafe.hasIrritability;
+      // Pastille verte si "aucun symptôme" coché et pas d'autres symptômes
+      final bool showGreenDot = hasSymptoms && hasNoSymptoms && !hasRealSymptoms;
+      // Pastille rouge si au moins un symptôme réel
+      final bool showRedDot = hasSymptoms && hasRealSymptoms;
       final isSelected = DateUtils.isSameDay(date, _selectedDate);
       final isToday = DateUtils.isSameDay(date, DateTime.now());
 
@@ -432,6 +438,72 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       ],
                     ),
                   ),
+                  // Symptômes du jour en premier
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Symptômes du jour',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  () {
+                    // Afficher les symptômes manuels OU ceux liés aux produits
+                    final hasSymptomChips = symptomsForSelectedDay != null && symptomsForSelectedDay.hasAny;
+                    if (!hasSymptomChips) {
+                      return Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[200]!),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.sentiment_satisfied_alt, color: Colors.grey[500]),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Aucun symptôme enregistré',
+                                style: TextStyle(color: Colors.grey[600]),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _openSymptomsDialog,
+                              child: const Text('Ajouter'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (symptomsForSelectedDay.hasBloating)
+                          _buildSymptomChip('Ballonnements', count: symptomProducts['Ballonnements']?.length ?? 0),
+                        if (symptomsForSelectedDay.hasPain)
+                          _buildSymptomChip('Douleurs abdominales', count: symptomProducts['Douleurs abdominales']?.length ?? 0),
+                        if (symptomsForSelectedDay.hasGas)
+                          _buildSymptomChip('Gaz', count: symptomProducts['Gaz']?.length ?? 0),
+                        if (symptomsForSelectedDay.hasDiarrhea)
+                          _buildSymptomChip('Diarrhée', count: symptomProducts['Diarrhée']?.length ?? 0),
+                        if (symptomsForSelectedDay.hasIrritability)
+                          _buildSymptomChip('Irritabilité', count: symptomProducts['Irritabilité']?.length ?? 0),
+                        if (symptomsForSelectedDay.hasNoSymptoms)
+                          _buildSymptomChip('Aucun symptôme', count: 1, color: Colors.green),
+                        // Bouton pour modifier
+                        TextButton.icon(
+                          onPressed: _openSymptomsDialog,
+                          icon: const Icon(Icons.edit, size: 16),
+                          label: const Text('Modifier'),
+                        ),
+                      ],
+                    );
+                  }(),
+                  // Scans du jour ensuite
                   const SizedBox(height: 16),
                   Text(
                     'Scans du ${DateFormat('dd/MM/yyyy').format(_selectedDate)}',
@@ -575,72 +647,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
                         },
                       ),
                     ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Symptômes du jour',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  () {
-                    final hasAnyProducts = (symptomProducts['Ballonnements']?.isNotEmpty ?? false) ||
-                        (symptomProducts['Douleurs abdominales']?.isNotEmpty ?? false) ||
-                        (symptomProducts['Gaz']?.isNotEmpty ?? false) ||
-                        (symptomProducts['Diarrhée']?.isNotEmpty ?? false) ||
-                        (symptomProducts['Irritabilité']?.isNotEmpty ?? false);
-                    final hasSymptomChips = symptomsForSelectedDay != null && symptomsForSelectedDay.hasAny && hasAnyProducts;
-                    if (!hasSymptomChips) {
-                      return Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[200]!),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.sentiment_satisfied_alt, color: Colors.grey[500]),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Aucun symptôme enregistré',
-                                style: TextStyle(color: Colors.grey[600]),
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: _openSymptomsDialog,
-                              child: const Text('Ajouter'),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                   return Wrap(
-                     spacing: 8,
-                     runSpacing: 8,
-                     children: [
-                       if (symptomsForSelectedDay.hasBloating &&
-                           (symptomProducts['Ballonnements']?.isNotEmpty ?? false))
-                         _buildSymptomChip('Ballonnements', count: symptomProducts['Ballonnements']!.length),
-                       if (symptomsForSelectedDay.hasPain &&
-                           (symptomProducts['Douleurs abdominales']?.isNotEmpty ?? false))
-                         _buildSymptomChip('Douleurs abdominales', count: symptomProducts['Douleurs abdominales']!.length),
-                       if (symptomsForSelectedDay.hasGas &&
-                           (symptomProducts['Gaz']?.isNotEmpty ?? false))
-                         _buildSymptomChip('Gaz', count: symptomProducts['Gaz']!.length),
-                       if ((symptomProducts['Diarrhée']?.isNotEmpty ?? false) && symptomsForSelectedDay.hasDiarrhea)
-                         _buildSymptomChip('Diarrhée', count: symptomProducts['Diarrhée']!.length),
-                        if (symptomsForSelectedDay.hasIrritability &&
-                            (symptomProducts['Irritabilité']?.isNotEmpty ?? false))
-                          _buildSymptomChip('Irritabilité', count: symptomProducts['Irritabilité']!.length),
-                        if (symptomsForSelectedDay.hasNoSymptoms && hasAnyProducts == false)
-                          _buildSymptomChip('Aucun symptôme', count: 1, color: Colors.green),
-                      ],
-                    );
-                  }(),
                 ],
               ),
             ),
